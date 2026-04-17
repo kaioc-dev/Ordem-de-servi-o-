@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RK Tech Pro - Sistema de O.S</title>
+    <style>
+        :root {
+            --primary: #007bff;
+            --success: #28a745;
+            --dark: #1a1a1a;
+            --gray: #f4f4f9;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            background-color: #eef0f3;
+            margin: 0;
+            padding: 15px;
+            display: flex;
+            justify-content: center;
+        }
+
+        /* Esconder área de impressão na tela */
+        #printArea { display: none; }
+
+        .app-container {
+            width: 100%;
+            max-width: 450px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            padding: 20px;
+        }
+
+        .header { text-align: center; padding-bottom: 15px; border-bottom: 2px solid var(--gray); margin-bottom: 20px; }
+        .header h1 { margin: 0; color: var(--primary); font-size: 26px; }
+
+        label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 5px; color: #444; }
+        
+        input, textarea {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            box-sizing: border-box;
+            font-size: 15px;
+        }
+
+        .pattern-area { background: var(--gray); border-radius: 15px; padding: 15px; text-align: center; margin-bottom: 15px; }
+        #patternCanvas { touch-action: none; background: transparent; }
+
+        .checklist { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+        .check-item { background: var(--gray); padding: 10px; border-radius: 8px; font-size: 12px; display: flex; align-items: center; }
+        .check-item input { width: auto; margin-right: 8px; margin-bottom: 0; }
+
+        .btn { width: 100%; padding: 16px; border: none; border-radius: 12px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.3s; margin-bottom: 10px; }
+        .btn-main { background: var(--primary); color: white; }
+        .btn-print { background: #6c757d; color: white; }
+        .btn-tech { background: #555; color: white; }
+
+        #successScreen { display: none; text-align: center; padding: 20px; }
+        .icon-success { width: 60px; height: 60px; background: var(--success); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 30px; margin: 0 auto 15px; }
+
+        /* ESTILOS DE IMPRESSÃO */
+        @media print {
+            body * { visibility: hidden; }
+            #printArea, #printArea * { visibility: visible; }
+            #printArea {
+                display: block !important;
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                color: black;
+                padding: 10px;
+            }
+            .no-print { display: none; }
+        }
+
+        .receipt-header { text-align: center; border-bottom: 1px dashed #000; padding-bottom: 10px; }
+        .receipt-body { font-size: 14px; line-height: 1.6; padding: 15px 0; }
+        .receipt-footer { text-align: center; font-size: 12px; border-top: 1px dashed #000; padding-top: 10px; }
+        .signature { margin-top: 30px; border-top: 1px solid #000; width: 80%; margin-left: 10%; }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <div id="formScreen">
+        <div class="header">
+            <h1>RK Tech</h1>
+            <p>ORDEM DE SERVIÇO</p>
+        </div>
+
+        <label>Configurar Seu WhatsApp (RK Tech):</label>
+        <input type="tel" id="zapLoja" placeholder="Ex: 11999998888" onchange="salvarLoja()">
+
+        <label>Nome do Cliente:</label>
+        <input type="text" id="nomeCliente">
+
+        <label>WhatsApp do Cliente:</label>
+        <input type="tel" id="zapCliente">
+
+        <label>Aparelho (Marca/Modelo):</label>
+        <input type="text" id="modelo">
+
+        <label>Defeito Relatado:</label>
+        <textarea id="defeito" rows="2"></textarea>
+
+        <label>Senha PIN/Texto:</label>
+        <input type="text" id="senhaTexto">
+        
+        <label>Padrão de Desenho:</label>
+        <div class="pattern-area">
+            <canvas id="patternCanvas" width="240" height="240"></canvas>
+            <button type="button" onclick="clearPattern()" style="border:none; background:none; color:red; font-size:11px;">Limpar Padrão</button>
+        </div>
+
+        <label>Checklist:</label>
+        <div class="checklist">
+            <label class="check-item"><input type="checkbox" name="cond" value="Tela Quebrada"> Tela Quebrada</label>
+            <label class="check-item"><input type="checkbox" name="cond" value="Bateria Ruim"> Bateria Ruim</label>
+            <label class="check-item"><input type="checkbox" name="cond" value="Tampa Quebrada"> Tampa Quebrada</label>
+            <label class="check-item"><input type="checkbox" name="cond" value="Conector Ruim"> Conector Ruim</label>
+            <label class="check-item"><input type="checkbox" name="cond" value="Marcas de Uso"> Marcas de Uso</label>
+            <label class="check-item"><input type="checkbox" name="cond" value="Sem Som"> Sem Som</label>
+        </div>
+
+        <label>Valor Total (R$):</label>
+        <input type="number" id="valor" step="0.01">
+
+        <button type="button" class="btn btn-main" onclick="gerarOS()">FINALIZAR E GERAR O.S</button>
+    </div>
+
+    <div id="successScreen">
+        <div class="icon-success">✓</div>
+        <h2>O.S Gerada!</h2>
+        <button class="btn btn-main" onclick="enviarCliente()">1. Enviar WhatsApp Cliente</button>
+        <button class="btn btn-tech" onclick="enviarLoja()">2. Enviar Cópia RK Tech</button>
+        <button class="btn btn-print" onclick="window.print()">3. Imprimir Comprovante</button>
+        <button onclick="location.reload()" style="margin-top:15px; background:none; border:none; color:var(--primary); cursor:pointer; font-weight:bold;">+ Nova Ordem de Serviço</button>
+    </div>
+</div>
+
+<div id="printArea">
+    <div class="receipt-header">
+        <h2>RK TECH - ASSISTÊNCIA</h2>
+        <p>Comprovante de Entrada de Aparelho</p>
+        <p id="pDataHora"></p>
+    </div>
+    <div class="receipt-body">
+        <p><strong>CLIENTE:</strong> <span id="pNome"></span></p>
+        <p><strong>CONTATO:</strong> <span id="pZap"></span></p>
+        <p><strong>APARELHO:</strong> <span id="pModelo"></span></p>
+        <p><strong>DEFEITO:</strong> <span id="pDefeito"></span></p>
+        <p><strong>SENHA:</strong> <span id="pSenha"></span> | <strong>PADRÃO:</strong> <span id="pPadrao"></span></p>
+        <p><strong>CONDIÇÕES:</strong> <span id="pCond"></span></p>
+        <h3 style="text-align: right;">VALOR: R$ <span id="pValor"></span></h3>
+    </div>
+    <div class="receipt-footer">
+        <p>Garantia de 90 dias apenas para o serviço executado.</p>
+        <div class="signature"></div>
+        <p>Assinatura do Cliente</p>
+    </div>
+</div>
+
+<script>
+    // --- PADRÃO DE BOLINHAS ---
+    const canvas = document.getElementById('patternCanvas');
+    const ctx = canvas.getContext('2d');
+    let dots = []; let path = []; let isDrawing = false;
+    for(let r=0; r<3; r++) for(let c=0; c<3; c++) dots.push({ x: c*80+40, y: r*80+40, id: (r*3+c+1) });
+
+    function draw() {
+        ctx.clearRect(0,0,240,240);
+        dots.forEach(d => {
+            ctx.beginPath(); ctx.arc(d.x, d.y, 10, 0, Math.PI*2);
+            ctx.fillStyle = path.includes(d.id) ? '#007bff' : '#ccc'; ctx.fill();
+        });
+        if(path.length > 0) {
+            ctx.beginPath(); ctx.lineWidth = 5; ctx.strokeStyle = '#007bff';
+            let start = dots.find(d => d.id === path[0]); ctx.moveTo(start.x, start.y);
+            for(let i=1; i<path.length; i++) { let dot = dots.find(d => d.id === path[i]); ctx.lineTo(dot.x, dot.y); }
+            ctx.stroke();
+        }
+    }
+    const getPos = (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const ev = e.touches ? e.touches[0] : e;
+        return { x: ev.clientX - rect.left, y: ev.clientY - rect.top };
+    }
+    canvas.addEventListener('mousedown', () => { isDrawing = true; path = []; draw(); });
+    canvas.addEventListener('touchstart', (e) => { e.preventDefault(); isDrawing = true; path = []; draw(); });
+    window.addEventListener('mousemove', (e) => {
+        if(!isDrawing) return; const pos = getPos(e);
+        dots.forEach(d => { if(Math.hypot(d.x - pos.x, d.y - pos.y) < 20 && !path.includes(d.id)) { path.push(d.id); draw(); } });
+    });
+    window.addEventListener('touchmove', (e) => {
+        if(!isDrawing) return; const pos = getPos(e);
+        dots.forEach(d => { if(Math.hypot(d.x - pos.x, d.y - pos.y) < 20 && !path.includes(d.id)) { path.push(d.id); draw(); } });
+    }, {passive:false});
+    window.addEventListener('mouseup', () => isDrawing = false);
+    window.addEventListener('touchend', () => isDrawing = false);
+    function clearPattern() { path = []; draw(); }
+    draw();
+
+    // --- LÓGICA DO APP ---
+    window.onload = () => { if(localStorage.getItem('zapLoja')) document.getElementById('zapLoja').value = localStorage.getItem('zapLoja'); };
+    function salvarLoja() { localStorage.setItem('zapLoja', document.getElementById('zapLoja').value); }
+
+    function gerarOS() {
+        const nome = document.getElementById('nomeCliente').value;
+        if(!nome) return alert("Digite o nome do cliente!");
+
+        // Preencher área de impressão
+        document.getElementById('pNome').innerText = nome;
+        document.getElementById('pZap').innerText = document.getElementById('zapCliente').value;
+        document.getElementById('pModelo').innerText = document.getElementById('modelo').value;
+        document.getElementById('pDefeito').innerText = document.getElementById('defeito').value;
+        document.getElementById('pSenha').innerText = document.getElementById('senhaTexto').value || "N/A";
+        document.getElementById('pPadrao').innerText = path.join('-') || "N/A";
+        document.getElementById('pValor').innerText = document.getElementById('valor').value;
+        document.getElementById('pDataHora').innerText = new Date().toLocaleString();
+        
+        let checks = [];
+        document.querySelectorAll('input[name="cond"]:checked').forEach(c => checks.push(c.value));
+        document.getElementById('pCond').innerText = checks.join(', ') || "Sem avarias";
+
+        document.getElementById('formScreen').style.display = 'none';
+        document.getElementById('successScreen').style.display = 'block';
+    }
+
+    function enviarCliente() {
+        const zap = document.getElementById('zapCliente').value.replace(/\D/g, '');
+        const msg = window.encodeURIComponent(`*RK Tech - Recibo* 📱\nOlá ${document.getElementById('nomeCliente').value}, seu aparelho ${document.getElementById('modelo').value} está sob nosso cuidado. Assim que estiver pronto entraremos em contato! 🤗 Valor do serviço: R$ ${document.getElementById('valor').value}.`);
+        window.open(`https://wa.me/55${zap}?text=${msg}`);
+    }
+
+    function enviarLoja() {
+        const loja = document.getElementById('zapLoja').value.replace(/\D/g, '');
+        let checks = []; document.querySelectorAll('input[name="cond"]:checked').forEach(c => checks.push(c.value));
+        const msg = window.encodeURIComponent(`*O.S TÉCNICA RK TECH*\nCliente: ${document.getElementById('nomeCliente').value}\nModelo: ${document.getElementById('modelo').value}\nSenha: ${document.getElementById('senhaTexto').value}\nPadrão: ${path.join('-')}\nEstado: ${checks.join(', ')}`);
+        window.open(`https://wa.me/55${loja}?text=${msg}`);
+    }
+</script>
+
+</body>
+</html>
